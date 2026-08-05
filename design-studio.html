@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>סטודיו העיצוב</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --dawn: #FFF7D6;
+    --blossom: #FF8DA1;
+    --sky: #7EC8E3;
+    --meadow: #8EE3A2;
+    --twilight: #7C5CFF;
+    --moon: #F0E9FF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, var(--dawn) 0%, var(--moon) 45%, #ffffff 100%);
+    color: #1f2937;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+  main {
+    width: 100%;
+    max-width: 1000px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 2.2rem;
+    padding: 24px;
+    box-shadow: 0 20px 45px -20px rgba(124, 92, 255, 0.35);
+    backdrop-filter: blur(6px);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  header p.eyebrow {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--twilight);
+    text-transform: uppercase;
+  }
+  header h1 {
+    margin: 6px 0 0;
+    font-size: 1.7rem;
+    font-weight: 900;
+  }
+  .ghost-btn {
+    border: 1px solid #e2e8f0;
+    background: rgba(255,255,255,0.85);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #475569;
+  }
+  .ghost-btn:hover { background: #fff; }
+
+  /* character picker */
+  #pickerGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 14px;
+  }
+  .char-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 2px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.7);
+    border-radius: 1.4rem;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .char-card:hover { transform: translateY(-4px); }
+  .char-card .thumb {
+    width: 100%;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .char-card .thumb img { height: 100%; width: auto; object-fit: contain; }
+  .char-card .name { font-weight: 800; font-size: 0.95rem; }
+
+  /* studio view */
+  #studioView { display: none; }
+  #backBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 0.9fr 1.2fr;
+    gap: 20px;
+  }
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2rem;
+    border: 1px solid rgba(255,255,255,0.7);
+    background: radial-gradient(circle at top, #FFF7D6 0%, #F0E9FF 55%, #FFFFFF 100%);
+    padding: 16px;
+  }
+  #stage { width: 100%; height: auto; max-height: 480px; }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tab {
+    border: 1px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.7);
+    color: #475569;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: var(--twilight);
+    border-color: var(--twilight);
+    color: #fff;
+    box-shadow: 0 8px 18px -8px rgba(124,92,255,0.6);
+  }
+
+  .options-card {
+    border: 1px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.7);
+    border-radius: 1.6rem;
+    padding: 20px;
+    box-shadow: 0 20px 45px -20px rgba(124, 92, 255, 0.25);
+  }
+  .options-card p.label {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.6);
+    border-radius: 1.2rem;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .option:hover { transform: translateY(-3px); }
+  .option.selected {
+    border-color: var(--twilight);
+    background: rgba(124,92,255,0.1);
+    box-shadow: 0 10px 20px -10px rgba(124,92,255,0.6);
+  }
+  .swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid #fff;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  .option span.name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-align: center;
+  }
+  .check {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--twilight);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <p class="eyebrow">סטודיו העיצוב</p>
+      <h1 id="pageTitle">בחרו דמות לעצב</h1>
+    </div>
+    <button id="resetBtn" class="ghost-btn" style="display:none">איפוס לברירת מחדל</button>
+  </header>
+
+  <section id="pickerView">
+    <div id="pickerGrid"></div>
+  </section>
+
+  <section id="studioView">
+    <button id="backBtn" class="ghost-btn">→ חזרה לבחירת דמות</button>
+
+    <div class="layout">
+      <div class="preview">
+        <canvas id="stage"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="tabs" id="tabs"></div>
+        <div class="options-card">
+          <p class="label" id="optionsLabel">בחרו</p>
+          <div class="options-grid" id="options"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const CATEGORY_DEFS = {
+  hair: {
+    label: 'שיער',
+    options: [
+      { id: 'brown', label: 'חום ערמוני', color: '#5B3A29' },
+      { id: 'espresso', label: 'חום כהה', color: '#2B1810' },
+      { id: 'black', label: 'שחור', color: '#2B2B2B' },
+      { id: 'ginger', label: 'ג׳ינג׳י', color: '#C1642B' },
+      { id: 'blue', label: 'כחול פנטזיה', color: '#4C7EF3' }
+    ]
+  },
+  top: {
+    label: 'חולצה',
+    options: [
+      { id: 'sky-blue', label: 'תכלת', color: '#4FB0E0' },
+      { id: 'sunny-yellow', label: 'צהוב שמש', color: '#F5C542' },
+      { id: 'grass-green', label: 'ירוק דשא', color: '#5FBF6B' },
+      { id: 'berry-pink', label: 'ורוד פטל', color: '#EC6A9C' },
+      { id: 'twilight-purple', label: 'סגול דמדומים', color: '#7C5CFF' }
+    ]
+  },
+  bottom: {
+    label: 'מכנס',
+    options: [
+      { id: 'navy', label: 'כחול נייבי', color: '#1F2937' },
+      { id: 'olive', label: 'זית', color: '#6B7A3A' },
+      { id: 'denim', label: 'ג׳ינס', color: '#3B5B92' },
+      { id: 'charcoal', label: 'אפור פחם', color: '#3A3A3A' }
+    ]
+  },
+  apron: {
+    label: 'סינר',
+    options: [
+      { id: 'charcoal', label: 'אפור פחם', color: '#2E2E2C' },
+      { id: 'navy', label: 'כחול נייבי', color: '#1F2937' },
+      { id: 'forest-green', label: 'ירוק יער', color: '#3B5B3F' },
+      { id: 'burgundy', label: 'בורדו', color: '#6B2333' },
+      { id: 'denim', label: 'ג׳ינס', color: '#3B5B92' }
+    ]
+  },
+  shoes: {
+    label: 'נעליים',
+    options: [
+      { id: 'cream-dots', label: 'קרם', color: '#E8DDC7' },
+      { id: 'white-sneakers', label: 'לבן', color: '#F5F5F5' },
+      { id: 'red-sneakers', label: 'אדום', color: '#D64545' },
+      { id: 'espresso', label: 'חום שוקולד', color: '#3D2B1F' },
+      { id: 'rainbow', label: 'קשת בענן', color: 'rainbow' }
+    ]
+  },
+  eyes: {
+    label: 'עיניים',
+    options: [
+      { id: 'hazel', label: 'ירוק-חום', color: '#7A8450' },
+      { id: 'brown', label: 'חום חם', color: '#5B3A29' },
+      { id: 'blue', label: 'כחול ים', color: '#4C7EF3' },
+      { id: 'amber', label: 'ענבר', color: '#D68A3C' }
+    ]
+  },
+  fur: {
+    label: 'פרווה',
+    options: [
+      { id: 'gray', label: 'אפור', color: '#8A7A68' },
+      { id: 'ginger', label: 'ג׳ינג׳י', color: '#D2691E' },
+      { id: 'black', label: 'שחור', color: '#2B2B2B' },
+      { id: 'cream', label: 'קרם', color: '#F0E6D6' },
+      { id: 'brown', label: 'חום', color: '#6B4423' }
+    ]
+  }
+};
+
+const CHARACTERS = [
+  { id: 'sol', name: 'סול', image: 'assets/characters/סול שקוף.png', categories: ['hair', 'top', 'bottom', 'shoes', 'eyes'], defaults: {} },
+  { id: 'do', name: 'דו', image: 'assets/characters/1.png', categories: ['hair', 'top', 'bottom', 'shoes'], defaults: { shoes: 'espresso' } },
+  { id: 're', name: 'רה', image: 'assets/characters/2.png', categories: ['hair', 'top', 'apron', 'shoes'], defaults: { hair: 'espresso', apron: 'charcoal', shoes: 'white-sneakers' } },
+  { id: 'mi', name: 'מי', image: 'assets/characters/3.png', categories: ['hair', 'top', 'shoes', 'eyes'], defaults: { top: 'berry-pink', shoes: 'red-sneakers' } },
+  { id: 'fa', name: 'פה', image: 'assets/characters/פה חדשה.png', categories: ['hair', 'top', 'bottom', 'shoes'], defaults: { top: 'twilight-purple' } },
+  { id: 'la', name: 'לה', image: 'assets/characters/7.png', categories: ['fur', 'eyes'], defaults: {} }
+];
+
+const ASSET_VERSION = Date.now();
+
+function maskPath(charId, category) {
+  return `assets/characters/masks/${charId}/${category}.png?v=${ASSET_VERSION}`;
+}
+
+function defaultLookFor(character) {
+  const look = {};
+  for (const cat of character.categories) {
+    look[cat] = character.defaults[cat] ?? CATEGORY_DEFS[cat].options[0].id;
+  }
+  return look;
+}
+
+function storageKey(charId) {
+  return `solDesignStudio.look.${charId}`;
+}
+
+function loadLook(character) {
+  const fallback = defaultLookFor(character);
+  try {
+    const raw = localStorage.getItem(storageKey(character.id));
+    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+let activeCharacter = null;
+let look = {};
+let activeCategory = null;
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+const layer = document.createElement('canvas');
+const layerCtx = layer.getContext('2d');
+
+let baseImg = null;
+let maskImgs = {};
+
+function renderPicker() {
+  const grid = document.getElementById('pickerGrid');
+  grid.innerHTML = '';
+  for (const character of CHARACTERS) {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `<div class="thumb"><img src="${character.image}?v=${ASSET_VERSION}" alt="${character.name}" /></div><span class="name">${character.name}</span>`;
+    card.onclick = () => openCharacter(character);
+    grid.appendChild(card);
+  }
+}
+
+async function openCharacter(character) {
+  activeCharacter = character;
+  look = loadLook(character);
+  activeCategory = character.categories[0];
+
+  document.getElementById('pickerView').style.display = 'none';
+  document.getElementById('studioView').style.display = 'block';
+  document.getElementById('resetBtn').style.display = 'inline-flex';
+  document.getElementById('pageTitle').textContent = `עצבו את ${character.name} מחדש`;
+
+  baseImg = await loadImage(`${character.image}?v=${ASSET_VERSION}`);
+  canvas.width = baseImg.naturalWidth;
+  canvas.height = baseImg.naturalHeight;
+  layer.width = baseImg.naturalWidth;
+  layer.height = baseImg.naturalHeight;
+
+  maskImgs = {};
+  for (const cat of character.categories) {
+    maskImgs[cat] = await loadImage(maskPath(character.id, cat));
+  }
+
+  render();
+  renderTabs();
+  renderOptions();
+}
+
+function closeCharacter() {
+  document.getElementById('pickerView').style.display = 'block';
+  document.getElementById('studioView').style.display = 'none';
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('pageTitle').textContent = 'בחרו דמות לעצב';
+  activeCharacter = null;
+}
+
+function fillLayer(colorId) {
+  layerCtx.clearRect(0, 0, layer.width, layer.height);
+  if (colorId === 'rainbow') {
+    const grad = layerCtx.createLinearGradient(0, 0, layer.width, 0);
+    grad.addColorStop(0, '#FF8DA1');
+    grad.addColorStop(0.33, '#F5C542');
+    grad.addColorStop(0.66, '#5FBF6B');
+    grad.addColorStop(1, '#4FB0E0');
+    layerCtx.fillStyle = grad;
+  } else {
+    layerCtx.fillStyle = colorId;
+  }
+  layerCtx.fillRect(0, 0, layer.width, layer.height);
+}
+
+function render() {
+  if (!baseImg || !activeCharacter) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+
+  for (const cat of activeCharacter.categories) {
+    const optionId = look[cat];
+    const option = CATEGORY_DEFS[cat].options.find((o) => o.id === optionId);
+    if (!option) continue;
+
+    fillLayer(option.color);
+    layerCtx.globalCompositeOperation = 'destination-in';
+    layerCtx.drawImage(maskImgs[cat], 0, 0, layer.width, layer.height);
+    layerCtx.globalCompositeOperation = 'hard-light';
+    layerCtx.drawImage(maskImgs[cat], 0, 0, layer.width, layer.height);
+    layerCtx.globalCompositeOperation = 'source-over';
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(layer, 0, 0);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function renderTabs() {
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = '';
+  for (const cat of activeCharacter.categories) {
+    const def = CATEGORY_DEFS[cat];
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (cat === activeCategory ? ' active' : '');
+    btn.textContent = def.label;
+    btn.onclick = () => {
+      activeCategory = cat;
+      renderTabs();
+      renderOptions();
+    };
+    tabsEl.appendChild(btn);
+  }
+}
+
+function renderOptions() {
+  const def = CATEGORY_DEFS[activeCategory];
+  document.getElementById('optionsLabel').textContent = 'בחרו ' + def.label;
+  const grid = document.getElementById('options');
+  grid.innerHTML = '';
+  for (const option of def.options) {
+    const isSelected = look[activeCategory] === option.id;
+    const card = document.createElement('div');
+    card.className = 'option' + (isSelected ? ' selected' : '');
+
+    if (isSelected) {
+      const check = document.createElement('span');
+      check.className = 'check';
+      check.textContent = '✓';
+      card.appendChild(check);
+    }
+
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.background = option.color === 'rainbow'
+      ? 'linear-gradient(90deg,#FF8DA1,#F5C542,#5FBF6B,#4FB0E0)'
+      : option.color;
+    card.appendChild(swatch);
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = option.label;
+    card.appendChild(name);
+
+    card.onclick = () => {
+      look[activeCategory] = option.id;
+      localStorage.setItem(storageKey(activeCharacter.id), JSON.stringify(look));
+      render();
+      renderOptions();
+    };
+
+    grid.appendChild(card);
+  }
+}
+
+document.getElementById('resetBtn').onclick = () => {
+  if (!activeCharacter) return;
+  look = defaultLookFor(activeCharacter);
+  localStorage.setItem(storageKey(activeCharacter.id), JSON.stringify(look));
+  render();
+  renderOptions();
+};
+
+document.getElementById('backBtn').onclick = closeCharacter;
+
+renderPicker();
+</script>
+</body>
+</html>
