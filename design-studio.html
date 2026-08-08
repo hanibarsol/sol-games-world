@@ -266,7 +266,7 @@ const CATEGORY_DEFS = {
       { id: 'espresso', label: 'חום כהה', color: '#2B1810' },
       { id: 'black', label: 'שחור', color: '#2B2B2B' },
       { id: 'ginger', label: 'ג׳ינג׳י', color: '#C1642B' },
-      { id: 'blue', label: 'כחול פנטזיה', color: '#4C7EF3' }
+      { id: 'plum', label: 'סגול יין', color: '#3D1F3D' }
     ]
   },
   top: {
@@ -322,8 +322,8 @@ const CATEGORY_DEFS = {
     options: [
       { id: 'gray', label: 'אפור', color: '#8A7A68' },
       { id: 'ginger', label: 'ג׳ינג׳י', color: '#D2691E' },
-      { id: 'black', label: 'שחור', color: '#2B2B2B' },
-      { id: 'cream', label: 'קרם', color: '#F0E6D6' },
+      { id: 'black', label: 'שחור', color: '#3D3D3D', intensity: 0.6 },
+      { id: 'cream', label: 'קרם', color: '#D8C9A8', intensity: 0.55 },
       { id: 'brown', label: 'חום', color: '#6B4423' }
     ]
   }
@@ -333,7 +333,7 @@ const CHARACTERS = [
   { id: 'sol', name: 'סול', image: 'assets/characters/סול שקוף.png', categories: ['hair', 'top', 'bottom', 'shoes', 'eyes'], defaults: {} },
   { id: 'do', name: 'דו', image: 'assets/characters/1.png', categories: ['hair', 'top', 'bottom', 'shoes'], defaults: { shoes: 'espresso' } },
   { id: 're', name: 'רה', image: 'assets/characters/2.png', categories: ['hair', 'top', 'apron', 'shoes'], defaults: { hair: 'espresso', apron: 'charcoal', shoes: 'white-sneakers' } },
-  { id: 'mi', name: 'מי', image: 'assets/characters/3.png', categories: ['hair', 'top', 'shoes', 'eyes'], defaults: { top: 'berry-pink', shoes: 'red-sneakers' } },
+  { id: 'mi', name: 'מי', image: 'assets/characters/3.png', categories: ['hair', 'top', 'shoes', 'eyes'], defaults: { top: 'berry-pink', shoes: 'red-sneakers', eyes: 'blue' }, excludeOptions: { hair: ['blue'] } },
   { id: 'fa', name: 'פה', image: 'assets/characters/פה חדשה.png', categories: ['hair', 'top', 'bottom', 'shoes'], defaults: { top: 'twilight-purple' } },
   { id: 'la', name: 'לה', image: 'assets/characters/7.png', categories: ['fur', 'eyes'], defaults: {} }
 ];
@@ -344,10 +344,15 @@ function maskPath(charId, category) {
   return `assets/characters/masks/${charId}/${category}.png?v=${ASSET_VERSION}`;
 }
 
+function optionsFor(character, category) {
+  const excluded = character.excludeOptions?.[category] ?? [];
+  return CATEGORY_DEFS[category].options.filter((o) => !excluded.includes(o.id));
+}
+
 function defaultLookFor(character) {
   const look = {};
   for (const cat of character.categories) {
-    look[cat] = character.defaults[cat] ?? CATEGORY_DEFS[cat].options[0].id;
+    look[cat] = character.defaults[cat] ?? optionsFor(character, cat)[0].id;
   }
   return look;
 }
@@ -383,6 +388,8 @@ const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const layer = document.createElement('canvas');
 const layerCtx = layer.getContext('2d');
+const lightmapLayer = document.createElement('canvas');
+const lightmapCtx = lightmapLayer.getContext('2d');
 
 let baseImg = null;
 let maskImgs = {};
@@ -414,6 +421,8 @@ async function openCharacter(character) {
   canvas.height = baseImg.naturalHeight;
   layer.width = baseImg.naturalWidth;
   layer.height = baseImg.naturalHeight;
+  lightmapLayer.width = baseImg.naturalWidth;
+  lightmapLayer.height = baseImg.naturalHeight;
 
   maskImgs = {};
   for (const cat of character.categories) {
@@ -462,8 +471,22 @@ function render() {
     fillLayer(option.color);
     layerCtx.globalCompositeOperation = 'destination-in';
     layerCtx.drawImage(maskImgs[cat], 0, 0, layer.width, layer.height);
+
+    let lightmapSrc = maskImgs[cat];
+    const intensity = option.intensity ?? 1;
+    if (intensity < 1) {
+      lightmapCtx.clearRect(0, 0, lightmapLayer.width, lightmapLayer.height);
+      lightmapCtx.globalCompositeOperation = 'source-over';
+      lightmapCtx.drawImage(maskImgs[cat], 0, 0, lightmapLayer.width, lightmapLayer.height);
+      lightmapCtx.globalCompositeOperation = 'source-atop';
+      lightmapCtx.fillStyle = `rgba(128,128,128,${1 - intensity})`;
+      lightmapCtx.fillRect(0, 0, lightmapLayer.width, lightmapLayer.height);
+      lightmapCtx.globalCompositeOperation = 'source-over';
+      lightmapSrc = lightmapLayer;
+    }
+
     layerCtx.globalCompositeOperation = 'hard-light';
-    layerCtx.drawImage(maskImgs[cat], 0, 0, layer.width, layer.height);
+    layerCtx.drawImage(lightmapSrc, 0, 0, layer.width, layer.height);
     layerCtx.globalCompositeOperation = 'source-over';
 
     ctx.globalCompositeOperation = 'source-over';
@@ -494,7 +517,7 @@ function renderOptions() {
   document.getElementById('optionsLabel').textContent = 'בחרו ' + def.label;
   const grid = document.getElementById('options');
   grid.innerHTML = '';
-  for (const option of def.options) {
+  for (const option of optionsFor(activeCharacter, activeCategory)) {
     const isSelected = look[activeCategory] === option.id;
     const card = document.createElement('div');
     card.className = 'option' + (isSelected ? ' selected' : '');
